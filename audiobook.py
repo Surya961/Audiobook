@@ -1,8 +1,8 @@
 '''
-The software is buggy and often may not work as intended. I only made this so I can dictate a nice narration of the story 
+The code is somewhat buggy and often may not work as intended. I only made this so I can dictate a nice narration of the story 
 I am currently working on. I usually do not exceed narrating any more than 50 pages at a time and even then it tends to
 overshoot or undershoot. Depending on the PC setup one has it can also take a considerable amount of time for conversion
-to complete. It can also get flagged by an antivirus, use it at your own risk if you must.
+to complete. Use it at your own risk if you must.
 
 '''
 
