@@ -1,8 +1,8 @@
 '''
 The code is somewhat buggy and often may not work as intended. I only made this so I can dictate a nice narration of the story 
 I am currently working on. I usually do not exceed narrating any more than 50 pages at a time and even then it tends to
-overshoot or undershoot. Depending on the PC setup one has it can also take a considerable amount of time for conversion
-to complete. Use it at your own risk if you must.
+overshoot or undershoot. Depending on the PC setup one has, it can also take considerable time for conversion processto complete. 
+Use it at your own risk if you must.
 
 '''
 
@@ -16,11 +16,22 @@ from tkinter import filedialog, messagebox
 from tkinter import ttk
 
 def clean_text(text):
-    
-    # Expressions to remove unwanted non-text content as in images.
+    # Regular expressions to remove common page numbers and unwanted content
     text = re.sub(r'(?i)page\s*\d+|[-—–]\s*\d+\s*[-—–]|\(\d+\)|^\d+\s*$', '', text)
     text = re.sub(r'\s+', ' ', text).strip()
     return text
+
+def get_total_pages(viewer):
+    # Function to count the total number of pages in the PDF
+    page_count = 0
+    while True:
+        try:
+            page_count += 1
+            viewer.navigate(page_count)
+            viewer.render()
+        except PageDoesNotExist:
+            break
+    return page_count
 
 def pdf_to_audiobook(pdf_path, output_path, start_page, end_page, lang='en', speed=1.0, progress_bar=None):
     try:
@@ -30,17 +41,16 @@ def pdf_to_audiobook(pdf_path, output_path, start_page, end_page, lang='en', spe
         # Open the PDF and set up the viewer
         with open(pdf_path, 'rb') as pdf_file:
             viewer = SimplePDFViewer(pdf_file)
-            total_pages = end_page - start_page + 1
 
-            # Ensure the pages are within bounds
-            viewer.navigate(1)
-            viewer.render()
-            max_page_count = viewer.canvas.num_pages
-            if start_page < 1 or end_page > max_page_count:
-                messagebox.showerror("Error", f"Invalid page range. PDF has {max_page_count} pages.")
+            # Get the total number of pages
+            total_pages = get_total_pages(viewer)
+
+            # Validate the page range
+            if start_page < 1 or end_page > total_pages:
+                messagebox.showerror("Error", f"Invalid page range. PDF has {total_pages} pages.")
                 return
 
-            # Extract text from the specified range
+            # Extract text from the specified page range
             for page_num in range(start_page, end_page + 1):
                 try:
                     viewer.navigate(page_num)
@@ -58,9 +68,9 @@ def pdf_to_audiobook(pdf_path, output_path, start_page, end_page, lang='en', spe
                     if cleaned_text.strip():
                         text += cleaned_text + " "
 
-                    # Update progress bar if extract is available for conversion
+                    # Update progress bar if available
                     if progress_bar:
-                        progress_bar['value'] = ((page_num - start_page + 1) / total_pages) * 100
+                        progress_bar['value'] = ((page_num - start_page + 1) / (end_page - start_page + 1)) * 100
                         progress_bar.update()
 
                 except PageDoesNotExist:
@@ -69,14 +79,13 @@ def pdf_to_audiobook(pdf_path, output_path, start_page, end_page, lang='en', spe
 
         # Calculate and show time taken for extraction
         extraction_time = time.time() - start_time
-        estimated_time = extraction_time / total_pages * max_page_count
-        messagebox.showinfo("Info", f"Text extraction completed in {extraction_time:.2f} seconds. Estimated total time for entire document: {estimated_time:.2f} seconds.")
+        messagebox.showinfo("Info", f"Text extraction completed in {extraction_time:.2f} seconds.")
 
-        # Adjust speech speed: gTTS only supports slow or normal speeds. I set the default at 1.0 : My experience says 3 - 4 times that is preferable
+        # Adjust speech speed: gTTS only supports slow or normal speeds
         slow = speed < 1
 
-        if text.strip():  # To ensure that there's text to convert
-            tts = gTTS(text=text, lang=lang, slow=slow)
+        if text.strip():  # Ensure there's text to convert
+            tts = gTTS(text=text, lang='en', slow=False)
             tts.save(output_path)
             messagebox.showinfo("Success", f"Audiobook saved to {output_path}")
         else:
@@ -124,7 +133,7 @@ def start_conversion():
 root = tk.Tk()
 root.title("PDF to Audiobook Converter")
 
-# Variables for storing file paths and settings. Doing it all in the same directory would be preferable
+# Variables for storing file paths and settings
 pdf_path_var = tk.StringVar()
 output_path_var = tk.StringVar()
 start_page_var = tk.StringVar(value='1')
@@ -154,7 +163,7 @@ ttk.Entry(frame, textvariable=speed_var, width=10).grid(row=4, column=1, sticky=
 
 ttk.Button(frame, text="Convert to Audiobook", command=start_conversion).grid(row=5, column=0, columnspan=3)
 
-# Add progress bar for conversion, sit back and relax. It usually takes about 10-20 mins for 50 pages, then again my PC is low end.
+# Add progress bar for conversion
 progress = ttk.Progressbar(frame, orient='horizontal', mode='determinate', length=400)
 progress.grid(row=6, column=0, columnspan=3, pady=10)
 
